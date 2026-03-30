@@ -11,6 +11,9 @@ WORKDIR /app
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Ruta explícita del caché de fastembed (consistente entre build y runtime)
+ENV FASTEMBED_CACHE_PATH=/app/.cache/fastembed
+
 # Pre-descargar el modelo ONNX de embeddings en la imagen (~60 MB, sin PyTorch)
 RUN python -c "from fastembed import TextEmbedding; list(TextEmbedding('sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2').embed(['test']))"
 

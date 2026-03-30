@@ -2,10 +2,15 @@
 Backend FastAPI — Inteligencia de Prensa · Fundación Cibervoluntarios
 """
 
+import logging
 import os
+import traceback
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Annotated
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, HTTPException, UploadFile
@@ -96,13 +101,18 @@ async def upload_file(file: Annotated[UploadFile, File()]):
     try:
         chunks = parse_file(content, file.filename)
     except Exception as e:
+        logger.error("Error parseando %s: %s\n%s", file.filename, e, traceback.format_exc())
         raise HTTPException(422, f"Error al procesar el fichero: {e}")
 
     if not chunks:
         raise HTTPException(422, "No se pudo extraer texto del fichero")
 
     # Indexar
-    indexed = index_chunks(chunks)
+    try:
+        indexed = index_chunks(chunks)
+    except Exception as e:
+        logger.error("Error indexando %s: %s\n%s", file.filename, e, traceback.format_exc())
+        raise HTTPException(500, f"Error al indexar el fichero: {e}")
 
     # Guardar copia local
     dest = UPLOAD_DIR / file.filename
