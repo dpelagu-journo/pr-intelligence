@@ -1,0 +1,16 @@
+.env
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+env/
+data/vector_store/
+data/*
+!data/.gitkeep
+uploads/*
+!uploads/.gitkeep
+*.egg-info/
+dist/
+build/
+.DS_Store
