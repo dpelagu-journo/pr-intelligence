@@ -1,0 +1,10 @@
+.git
+.venv
+venv
+__pycache__
+*.pyc
+data/vector_store
+uploads
+.env
+*.md
+backend/.venv

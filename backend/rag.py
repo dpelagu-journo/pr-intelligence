@@ -1,5 +1,5 @@
 """
-Motor RAG: indexación con ChromaDB + embeddings locales (sentence-transformers)
+Motor RAG: indexación con ChromaDB + embeddings ONNX (fastembed)
 y generación de respuestas con Claude (Anthropic API).
 """
 
@@ -10,13 +10,13 @@ from typing import Optional
 import anthropic
 import chromadb
 from chromadb.config import Settings
-from sentence_transformers import SentenceTransformer
+from fastembed import TextEmbedding
 
 # ── Config ─────────────────────────────────────────────────────────────────────
 
 VECTOR_STORE_PATH = os.getenv("VECTOR_STORE_PATH", "./data/vector_store")
 COLLECTION_NAME = "press_intelligence"
-EMBED_MODEL_NAME = "paraphrase-multilingual-MiniLM-L12-v2"  # multilingüe, español OK
+EMBED_MODEL_NAME = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 TOP_K = 6  # chunks a recuperar por consulta
 CLAUDE_MODEL = "claude-sonnet-4-6"
 
@@ -41,13 +41,13 @@ dilo claramente y sugiere qué datos adicionales podrían ayudar."""
 
 # ── Singleton del modelo de embeddings ────────────────────────────────────────
 
-_embed_model: Optional[SentenceTransformer] = None
+_embed_model: Optional[TextEmbedding] = None
 
 
-def _get_embed_model() -> SentenceTransformer:
+def _get_embed_model() -> TextEmbedding:
     global _embed_model
     if _embed_model is None:
-        _embed_model = SentenceTransformer(EMBED_MODEL_NAME)
+        _embed_model = TextEmbedding(EMBED_MODEL_NAME)
     return _embed_model
 
 
@@ -79,7 +79,7 @@ def index_chunks(chunks: list[dict]) -> int:
     collection = _get_collection()
 
     texts = [c["text"] for c in chunks]
-    embeddings = model.encode(texts, show_progress_bar=False).tolist()
+    embeddings = list(model.embed(texts))
 
     ids = [str(uuid.uuid4()) for _ in chunks]
     metadatas = [c.get("metadata", {}) for c in chunks]
@@ -127,7 +127,7 @@ def retrieve(query: str, top_k: int = TOP_K) -> list[dict]:
     model = _get_embed_model()
     collection = _get_collection()
 
-    query_embedding = model.encode([query], show_progress_bar=False).tolist()[0]
+    query_embedding = list(model.embed([query]))[0].tolist()
     results = collection.query(
         query_embeddings=[query_embedding],
         n_results=min(top_k, collection.count() or 1),

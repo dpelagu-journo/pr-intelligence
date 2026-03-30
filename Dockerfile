@@ -11,9 +11,8 @@ WORKDIR /app
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Pre-descargar el modelo de embeddings en la imagen
-# (evita descarga de ~120 MB en cada arranque en producción)
-RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')"
+# Pre-descargar el modelo ONNX de embeddings en la imagen (~60 MB, sin PyTorch)
+RUN python -c "from fastembed import TextEmbedding; list(TextEmbedding('sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2').embed(['test']))"
 
 # Copiar código
 COPY backend/ ./backend/
